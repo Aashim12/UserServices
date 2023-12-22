@@ -7,10 +7,10 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin
-@FeignClient(value = "users",url = "http://10.20.3.151:9000",fallbackFactory = UserServiceFeignImpl.class)
+@FeignClient(value = "users",url = "http://10.20.3.160:9000",fallbackFactory = UserServiceFeignImpl.class)
 @EnableFeignClients
 public interface UserFeign   {
 
-    @RequestMapping(method = RequestMethod.POST,value = "insta/addprofile")
+    @RequestMapping(method = RequestMethod.POST,value = "insta/search/addprofile")
    public void sendUserDetailsSolar( UserFeignDto userFeignDto);
 }

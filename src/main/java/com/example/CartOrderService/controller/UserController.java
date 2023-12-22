@@ -6,6 +6,7 @@ import com.example.CartOrderService.dto.UserResponseDto;
 import com.example.CartOrderService.entity.Requests;
 import com.example.CartOrderService.entity.UserDetails;
 import com.example.CartOrderService.services.UserService;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,9 +17,10 @@ import javax.xml.ws.Response;
 import java.util.ArrayList;
 import java.util.List;
 
+@CrossOrigin
 @RestController
 @Slf4j
-@RequestMapping("/users")
+@RequestMapping("/insta/users")
 public class UserController {
 
   @Autowired
@@ -92,4 +94,20 @@ public class UserController {
              return new ResponseEntity<>(false,HttpStatus.BAD_REQUEST);
     }
 
+     @GetMapping("/getEmailByUserId")
+    ResponseEntity<String> sendEmailByUserId(@RequestParam String userId){
+
+        String email = userService.sendEmail(userId);
+        return new ResponseEntity<>(email,HttpStatus.ACCEPTED);
+     }
+
+      @PostMapping("/addFollower")
+      ResponseEntity<Boolean> addFollower (@RequestParam String userId, @RequestBody RequestDto requestDto){
+
+       Boolean isAdded = userService.addFollower(userId,requestDto);
+        if(isAdded)
+            return  new ResponseEntity<>(true,HttpStatus.ACCEPTED);
+        else
+            return new ResponseEntity<>(false,HttpStatus.BAD_REQUEST);
+      }
 }

@@ -8,6 +8,10 @@ import java.util.List;
 public class UserResponseDto {
     String profilePic;
     String name;
+    String bio;
+    String  visibilty;
+    String userName;
     List<String> followers;
+    String userId;
     List<String> following;
 }

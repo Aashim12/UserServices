@@ -18,5 +18,7 @@ List<String> getListOfFollowingByUserId(String userId);
 Boolean sendRequest(String senderUserId, RequestDto requestDto);
 List<Requests> getReceviedRequests(String userId);
 Boolean acceptRequest(String userId,Requests request);
+String sendEmail(String userId);
 
+Boolean addFollower(String userId, RequestDto requestDto);
 }

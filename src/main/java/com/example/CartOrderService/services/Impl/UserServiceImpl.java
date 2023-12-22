@@ -9,10 +9,12 @@ import com.example.CartOrderService.entity.UserDetails;
 import com.example.CartOrderService.feignClient.UserFeign;
 import com.example.CartOrderService.repositry.UserRepositry;
 import com.example.CartOrderService.services.UserService;
+import org.apache.tomcat.jni.User;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.jws.soap.SOAPBinding;
 import javax.xml.ws.Response;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +30,6 @@ public class UserServiceImpl implements UserService {
     @Override
     public Boolean addUser(String userId, UserRequestDto userRequestDto) {
         UserDetails userDetails = new UserDetails();
-
         Boolean existsByUserName = userRepositry.existsByUserName(userRequestDto.getUserName());
         if(existsByUserName){
             return false;
@@ -36,6 +37,7 @@ public class UserServiceImpl implements UserService {
        else{
             if(userRequestDto!=null){
                 BeanUtils.copyProperties(userRequestDto,userDetails);
+                userDetails.setUserId(userId);
                 userRepositry.save(userDetails);
                 UserFeignDto userFeignDto = new UserFeignDto();
              BeanUtils.copyProperties(userDetails,userFeignDto);
@@ -73,37 +75,56 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Boolean sendRequest(String senderUserId, RequestDto requestDto) {
-
         UserDetails senderDetails = userRepositry.findById(senderUserId).orElse(null);
           String  recevierUserId = requestDto.getUserId();
-          Requests receviedRequest = new Requests();
-          receviedRequest.setUserId(senderUserId);
-          String senderUsername = senderDetails.getUserName();
-          receviedRequest.setUserName(senderUsername);
-          receviedRequest.setDate(requestDto.getDate());
-          UserDetails recevierDetails = userRepositry.findById(recevierUserId).orElse(null);
-          if(senderDetails!=null && recevierDetails!=null){
-              Requests sendRequest = new Requests();
-              BeanUtils.copyProperties(requestDto,sendRequest);
-              if(senderDetails.getRequestsSent()==null){
-                  List<Requests> requests = new ArrayList<>();
-                  requests.add(sendRequest);
-                  senderDetails.setRequestsSent(requests);
+          UserDetails recevicerDetails = userRepositry.findById(recevierUserId).orElse(null);
+          if(recevicerDetails.getVisibilty().equals("Public")){
+              if(recevicerDetails.getFollowers()==null){
+                  List<String> followers = new ArrayList<>();
+                  followers.add(senderUserId);
+                  recevicerDetails.setFollowers(followers);
               }
               else{
-                  senderDetails.getRequestsSent().add(sendRequest);
+                  recevicerDetails.getFollowers().add(senderUserId);
               }
-              if(recevierDetails.getRequestsSent()==null){
-                  List<Requests> requests = new ArrayList<>();
-                  requests.add(receviedRequest);
-                  recevierDetails.setRequestsReceived(requests);
+             if(senderDetails.getFollowing()==null) {
+                 List<String> following = new ArrayList<>();
+                 following.add(senderUserId);
+                 senderDetails.setFollowing(following);
+             }
+             else{
+                  senderDetails.getFollowing().add(recevierUserId);
+             }
+
+          }
+          else {
+              Requests receviedRequest = new Requests();
+              receviedRequest.setUserId(senderUserId);
+              String senderUsername = senderDetails.getUserName();
+              receviedRequest.setUserName(senderUsername);
+              receviedRequest.setDate(requestDto.getDate());
+              UserDetails recevierDetails = userRepositry.findById(recevierUserId).orElse(null);
+              if (senderDetails != null && recevierDetails != null) {
+                  Requests sendRequest = new Requests();
+                  BeanUtils.copyProperties(requestDto, sendRequest);
+                  if (senderDetails.getRequestsSent() == null) {
+                      List<Requests> requests = new ArrayList<>();
+                      requests.add(sendRequest);
+                      senderDetails.setRequestsSent(requests);
+                  } else {
+                      senderDetails.getRequestsSent().add(sendRequest);
+                  }
+                  if (recevierDetails.getRequestsSent() == null) {
+                      List<Requests> requests = new ArrayList<>();
+                      requests.add(receviedRequest);
+                      recevierDetails.setRequestsReceived(requests);
+                  } else {
+                      recevierDetails.getRequestsSent().add(receviedRequest);
+                  }
+                  userRepositry.save(senderDetails);
+                  userRepositry.save(recevierDetails);
+                  return true;
               }
-              else{
-                  recevierDetails.getRequestsSent().add(receviedRequest);
-              }
-              userRepositry.save(senderDetails);
-              userRepositry.save(recevierDetails);
-              return true;
           }
         return false ;
         }
@@ -135,7 +156,7 @@ public class UserServiceImpl implements UserService {
                       followers.add(userTobeadded.getUserId());
                       userDetails.setFollowers(followers);
                   }
-                  if(userTobeadded.getFollowers()!=null)
+                  if(userTobeadded.getFollowing()!=null)
                   userTobeadded.getFollowing().add(userId);
                   else{
                       List<String> following = new ArrayList<>();
@@ -163,6 +184,32 @@ public class UserServiceImpl implements UserService {
                 return true;
         }
        return  false;
+    }
+
+    @Override
+    public String sendEmail(String userId) {
+        UserDetails userDetails = userRepositry.findById(userId).orElse(null);
+        if(userDetails!=null)
+            return userDetails.getUserEmail();
+        else
+            return null;
+    }
+
+    @Override
+    public Boolean addFollower(String userId, RequestDto requestDto) {
+        UserDetails userDetails = userRepositry.findById(userId).orElse(null);
+        UserDetails senderDetails = userRepositry.findById(requestDto.getUserId()).orElse(null);
+
+        if(userDetails!=null && senderDetails!=null){
+            userDetails.getFollowers().add(senderDetails.getUserId());
+            senderDetails.getFollowing().add(userDetails.getUserId());
+            userRepositry.save(userDetails);
+            userRepositry.save(senderDetails);
+            return true;
+        }
+        else{
+            return false;
+        }
     }
 
 }
